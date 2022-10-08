@@ -1,16 +1,22 @@
 #include "CPU.h"
 
-
 const int BIN_SIGNATURE = 'C' * 256 + 'P';
 const int  ASM_VERSION  =       3        ;
-const int    CMD_MASK   =       31       ;
+const int    CMD_MASK   =       15       ;
+const int DUMP_ELEMENTS =       25       ;
 const char *SIGNATURE   =      "CP"      ;
+
+//#define DUMP_PAUSE
+
+#define codeDump(cpu) { \
+    cpuCodeDump((cpu), __LINE__, __PRETTY_FUNCTION__, FILENAME_, stderr);      \
+}
 
 void myDebugElemPrint(FILE *stream, const Elem_t element);
 
-int BinFileCtor(BinFile *commands, FILE *stream) {
-    catchNullptr(commands);
-    if (commands -> status == Constructed)
+int BinFileCtor(BinFile *binFile, FILE *stream) {
+    catchNullptr(binFile);
+    if (binFile -> status == Constructed)
         return BinDestructedFile;
 
     int *buffer = (int *) calloc(3, sizeof(int));
@@ -21,19 +27,19 @@ int BinFileCtor(BinFile *commands, FILE *stream) {
 
     catchNullptr(buffer);
 
-    commands -> signature  = *buffer;
+    binFile -> signature  = *buffer;
     ++buffer;
-    commands -> asmVersion = *buffer;
+    binFile -> asmVersion = *buffer;
     ++buffer;
-    commands ->  fileSize  = *buffer;
-    commands ->    file    =  stream;
+    binFile ->  fileSize  = *buffer - 3 * sizeof(int);
+    binFile ->    file    =  stream;
 
-    if (commands -> signature != BIN_SIGNATURE)
+    if (binFile -> signature != BIN_SIGNATURE)
         return BinSignatureErr;
-    if (commands -> asmVersion != ASM_VERSION)
+    if (binFile -> asmVersion != ASM_VERSION)
         return BinAsmVersionErr;
 
-    commands ->   status   = Constructed;
+    binFile ->   status   = Constructed;
 
     return OK;
 }
@@ -181,26 +187,74 @@ int doBinCommands(CPU *cpu, FILE *stream) {
     int err = 0;
 
     while (cpu -> ip < cpu -> codeSize) {
-        switch(cpu -> code[cpu -> ip]) {
+        char     cmd    = 0;
+        Elem_t argument = 0;
+        codeDump(cpu);
+
+        switch((cpu -> code[cpu -> ip] & CMD_MASK)) {
             case PUSH:
-                cpu -> ip += sizeof(int);
-                err |=stackPush(&(cpu -> stack), cpu -> code[cpu -> ip]);
+                    cmd  = cpu -> code[cpu -> ip];
+                argument = 0;
+
+                cpu -> ip += sizeof(char);
+
+                if (cmd & TypeReg) {
+                    argument  += cpu -> code[cpu -> ip];
+                    cpu -> ip += sizeof(char);
+                }
+                if (cmd & TypeNum) {
+                    argument  += *((Elem_t *) (cpu -> code + cpu -> ip));
+                    cpu -> ip += sizeof(Elem_t);
+                }
+                if (cmd & TypeRAM)
+                    argument = cpu -> RAM[argument];
+
+                err |= stackPush(&(cpu -> stack), argument);
                 break;
+
             case POP:
-                stackPop(&(cpu -> stack), &err);
+                cmd  = cpu -> code[cpu -> ip];
+                argument = 0;
+
+                cpu -> ip += sizeof(char);
+
+                if (cmd & TypeReg) {
+                    argument  += cpu -> code[cpu -> ip];
+                    cpu -> ip += sizeof(char);
+                }
+                if (cmd & TypeNum) {
+                    argument  += cpu -> code[cpu -> ip];
+                    cpu -> ip += sizeof(Elem_t);
+                }
+
+                //TODO: OutOfArrayErr
+
+                if (cmd & TypeRAM)
+                    cpu -> RAM[argument]  = stackPop(&(cpu -> stack), &err);
+                else if (cmd & TypeRAM)
+                    cpu -> Regs[argument] = stackPop(&(cpu -> stack), &err);
+                else
+                    stackPop(&(cpu -> stack), &err);
                 break;
+
             case ADD:
                 if (cpu -> stack.size < 2)
                     fprintf(stderr, "Not enough Elements to add :_(\n");
-                else
+                else {
                     err |=stackPush(&(cpu -> stack), stackPop(&(cpu -> stack), &err) + stackPop(&(cpu -> stack), &err));
+                    cpu -> ip += sizeof(char);
+                }
                 break;
+
             case DIV:
                 if (cpu -> stack.size < 2)
                     fprintf(stderr, "Not enough Elements to div :_(\n");
-                else
+                else {
                     err |= stackPush(&(cpu -> stack), stackPop(&(cpu -> stack), &err) / stackPop(&(cpu -> stack), &err));
+                    cpu -> ip += sizeof(char);
+                }
                 break;
+
             case OUT:
                 if (cpu -> stack.size < 1)
                     fprintf(stderr, "Not enough Elements to Out :_(\n");
@@ -208,20 +262,25 @@ int doBinCommands(CPU *cpu, FILE *stream) {
                     Elem_t value = stackPop(&(cpu -> stack), &err);
                     fprintf(stream, "%d\n", value);
                     err |= stackPush(&(cpu -> stack), value);
+
+                    cpu -> ip += sizeof(char);
                 }
                 break;
+
             case PRODUCT:
                 if (cpu -> stack.size < 2)
                     fprintf(stderr, "Not enough Elements to div :_(\n");
-                else
+                else {
                     err |= stackPush(&(cpu -> stack), stackPop(&(cpu -> stack), &err) * stackPop(&(cpu -> stack), &err));
+                    cpu -> ip += sizeof(char);
+                }
                 break;
+
             default:
                 break;
         }
         if (err)
             return err;
-        cpu -> ip += sizeof(int);
     }
 
 
@@ -231,4 +290,39 @@ int doBinCommands(CPU *cpu, FILE *stream) {
 void myDebugElemPrint(FILE *stream, const Elem_t element) {
     fprintf(stderr, "%d", element);
     fprintf(stream, "%d", element);
+}
+
+void cpuCodeDump(CPU *cpu, const unsigned line, const char *functionName, const char *fileName, FILE *stream) {
+    fprintf(stream, "-------------------------------CodeDump-------------------------------\n");
+    fprintf(stream, "CPU_Code:%08X dumped at %s at %s(%d)\n", cpu -> code, functionName, fileName, line);
+    for (size_t current = 0; current < DUMP_ELEMENTS; ++current) {
+        fprintf(stream, "%03zu ", current);
+    }
+    fprintf(stream, "\n");
+    for (size_t current = 0; current < DUMP_ELEMENTS; ++current) {
+        fprintf(stream, "%03d ", cpu -> code[current]);
+    }
+    fprintf(stream, "\n");
+    for (size_t current = 0; current < DUMP_ELEMENTS; ++current) {
+        if (cpu -> ip > current)
+            fprintf(stream, "    ");
+        else if (cpu -> ip == current)
+            fprintf(stream, "^^^\n");
+        else
+            break;
+    }
+    for (size_t current = 0; current < DUMP_ELEMENTS; ++current) {
+        if (cpu -> ip > current)
+            fprintf(stream, "    ");
+        else if (cpu -> ip == current)
+            fprintf(stream, " ip\n");
+        else
+            break;
+    }
+    fprintf(stream, "\n");
+
+#ifdef DUMP_PAUSE
+    if (stream == stderr)
+        getchar();
+#endif
 }

@@ -27,8 +27,8 @@ const int  RAM_SIZE = 10000;
 const int REGS_SIZE = 5;
 
 struct CPU {
-    int     *Regs   =  nullptr ;
-    int     *RAM    =  nullptr ;
+    Elem_t  *Regs   =  nullptr ;
+    Elem_t  *RAM    =  nullptr ;
     char    *code   =  nullptr ;
     size_t codeSize =     0    ;
     size_t    ip    =     0    ;
@@ -37,7 +37,7 @@ struct CPU {
     Stack stack = {};
 };
 
-int BinFileCtor(BinFile *commands, FILE *stream);
+int BinFileCtor(BinFile *binFile, FILE *stream);
 
 int BinFileDtor(BinFile *commands);
 
@@ -48,3 +48,5 @@ int cpuDtor(CPU *cpu);
 int doBinCommands(CPU *cpu, FILE *stream);
 
 int doTexCommands(Lines *commandList, FILE *stream);
+
+void cpuCodeDump(CPU *cpu, const unsigned line, const char *functionName, const char *fileName, FILE *stream);

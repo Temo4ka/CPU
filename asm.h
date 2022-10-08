@@ -5,6 +5,12 @@
     }\
 }
 
+enum ArgType {
+    TypeNum = (1 << 4),
+    TypeReg = (1 << 5),
+    TypeRAM = (1 << 6)
+};
+
 enum StackCommands {
       HALT  = 0,
       PUSH  = 1,
@@ -15,3 +21,7 @@ enum StackCommands {
       DIV   = 6,
     PRODUCT = 7,
 };
+
+int stackAsmTex(Lines *commandList, FILE *outStream);
+
+int stackAsmBin(Lines *commandList, FILE *outStream);
