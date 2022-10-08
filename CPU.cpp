@@ -6,6 +6,7 @@ const int    CMD_MASK   =       15       ;
 const int DUMP_ELEMENTS =       25       ;
 const char *SIGNATURE   =      "CP"      ;
 
+//#define DUMP_ON
 //#define DUMP_PAUSE
 
 #define codeDump(cpu) { \
@@ -189,7 +190,10 @@ int doBinCommands(CPU *cpu, FILE *stream) {
     while (cpu -> ip < cpu -> codeSize) {
         char     cmd    = 0;
         Elem_t argument = 0;
+
+#ifdef DUMP_ON
         codeDump(cpu);
+#endif
 
         switch((cpu -> code[cpu -> ip] & CMD_MASK)) {
             case PUSH:
@@ -223,7 +227,7 @@ int doBinCommands(CPU *cpu, FILE *stream) {
                     cpu -> ip += sizeof(char);
                 }
                 if (cmd & TypeNum) {
-                    argument  += cpu -> code[cpu -> ip];
+                    argument  += *((Elem_t *) (cpu -> code + cpu -> ip));
                     cpu -> ip += sizeof(Elem_t);
                 }
 
