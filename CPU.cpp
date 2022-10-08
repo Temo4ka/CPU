@@ -276,7 +276,9 @@ int doBinCommands(CPU *cpu, FILE *stream) {
                 }
                 break;
 
+
             default:
+                cpu -> ip = cpu -> codeSize;
                 break;
         }
         if (err)
