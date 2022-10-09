@@ -280,6 +280,9 @@ int doBinCommands(CPU *cpu, FILE *stream) {
                 }
                 break;
 
+            case JUMP:
+                cpu -> ip = *((int *) ((char *) cpu -> code + cpu -> ip));
+                break;
 
             default:
                 cpu -> ip = cpu -> codeSize;
