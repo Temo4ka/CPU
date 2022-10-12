@@ -66,13 +66,10 @@ DEF_CMD_JUMP(JL , 13, ==)
 
 DEF_CMD_JUMP(JM , 14, !=)
 
-DEF_CMD_REC(CALL, 15, {
-    cpu -> ip += sizeof(char);
-    err |= stackPush(&(cpu -> calls), cpu -> ip + sizeof(int));
-    cpu -> ip = *((int *) ((char *) cpu -> code + cpu -> ip));
-})
+DEF_CMD_JUMP(CALL, 15, ==)
 
-DEF_CMD_REC(RET , 16, {
+DEF_CMD(RET, 16, 0, {
     argument = stackPop(&(cpu -> calls), &err);
     cpu -> ip = argument;
+    break;
 })

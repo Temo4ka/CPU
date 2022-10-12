@@ -10,7 +10,7 @@ const char *SIGNATURE   =      "CP"      ;
 
 //#define REGS_DUMP_ON
 
-//#define STACK_DUMP_ON
+#define STACK_DUMP_ON
 
 //#define DUMP_PAUSE
 
@@ -248,14 +248,20 @@ int doBinCommands(CPU *cpu, FILE *stream) {
                 }                                                                       \
              break;
 
-#define DEF_CMD_JUMP(name, num, oper)                                                   \
-        case CMD_##name:                                                                \
-            cpu -> ip += sizeof(char);                                                  \
-            if (stackPop(&(cpu -> stack), &err) oper stackPop(&(cpu -> stack), &err))   \
-                cpu -> ip = *((int *) ((char *) cpu -> code + cpu -> ip));              \
-            else                                                                        \
-                cpu -> ip += sizeof(int);                                               \
-            break;                                                                      \
+#define DEF_CMD_JUMP(name, num, oper)                                                       \
+        case CMD_##name:                                                                    \
+            if (strcmpi(#name, "call")) {                                                   \
+                cpu -> ip += sizeof(char);                                                  \
+                if (stackPop(&(cpu -> stack), &err) oper stackPop(&(cpu -> stack), &err))   \
+                    cpu -> ip = *((int *) ((char *) cpu -> code + cpu -> ip));              \
+                else                                                                        \
+                    cpu -> ip += sizeof(int);                                               \
+            } else {                                                                        \
+                cpu -> ip += sizeof(char);                                                  \
+                err |= stackPush(&(cpu -> calls), cpu -> ip + sizeof(int));                 \
+                cpu -> ip = *((int *) ((char *) cpu -> code + cpu -> ip));                  \
+            }                                                                               \
+            break;                                                                          \
 
 #define DEF_CMD_REC(name, num,...)                                                      \
         case CMD_##name:                                                                \
