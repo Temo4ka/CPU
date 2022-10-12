@@ -2,7 +2,7 @@
 
 const int BIN_SIGNATURE = 'C' * 256 + 'P';
 const int  ASM_VERSION  =       3        ;
-const int    CMD_MASK   =       15       ;
+const int    CMD_MASK   =       31       ;
 const int DUMP_ELEMENTS =       25       ;
 const char *SIGNATURE   =      "CP"      ;
 
@@ -65,6 +65,7 @@ int cpuCtor(CPU *cpu, BinFile *binFile) {
         return BinFreadErr;
 
     stackCtor(&(cpu -> stack), myDebugElemPrint);
+    stackCtor(&(cpu -> calls), myDebugElemPrint);
 
     cpu -> status = Constructed;
 
@@ -84,6 +85,10 @@ int cpuDtor(CPU *cpu) {
     cpu -> codeSize =   -1   ;
 
     int err = stackDtor(&(cpu -> stack));
+    if (err)
+        return err;
+
+        err = stackDtor(&(cpu -> calls));
     if (err)
         return err;
 
@@ -188,38 +193,38 @@ int doBinCommands(CPU *cpu, FILE *stream) {
     int err = 0;
 
     while (cpu -> ip < cpu -> codeSize) {
-        char     cmd    = 0;
-        Elem_t argument = 0;
+        unsigned char cmd    = ((unsigned char) cpu -> code[cpu -> ip] & CMD_MASK);
+        Elem_t      argument =                  0                    ;
 
 #ifdef DUMP_ON
         codeDump(cpu);
 #endif
 
-        switch((cpu -> code[cpu -> ip] & CMD_MASK)) {
+        switch(cmd & CMD_MASK) {
 
-#define DEF_CMD(name, num, arg, ...)                                        \
-        case CMD_##name:                                                    \
-             if (arg > 0) {                                                 \
-                cmd  = cpu -> code[cpu -> ip];                              \
-                argument = 0;                                               \
-                                                                            \
-                cpu -> ip += sizeof(char);                                  \
-                                                                            \
-                if (cmd & TypeReg) {                                        \
-                    argument  += cpu -> code[cpu -> ip];                    \
-                    cpu -> ip += sizeof(char);                              \
-                }                                                           \
-                if (cmd & TypeNum) {                                        \
-                    argument  += *((Elem_t *) (cpu -> code + cpu -> ip));   \
-                    cpu -> ip += sizeof(Elem_t);                            \
-                }                                                           \
-                __VA_ARGS__                                                 \
-             } else if (cpu -> stack.size < -arg)                           \
-                    fprintf(stderr, "Not enough Elements to Out :_(\n");    \
-                else {                                                      \
-                    __VA_ARGS__                                             \
-                    cpu -> ip += sizeof(char);                              \
-                }                                                           \
+#define DEF_CMD(name, num, arg, ...)                                                    \
+        case CMD_##name:                                                                \
+             if (arg > 0) {                                                             \
+                cmd  = (unsigned char) cpu -> code[cpu -> ip];                          \
+                argument = 0;                                                           \
+                                                                                        \
+                cpu -> ip += sizeof(char);                                              \
+                                                                                        \
+                if (cmd & TypeReg) {                                                    \
+                    argument  += cpu -> code[cpu -> ip];                                \
+                    cpu -> ip += sizeof(char);                                          \
+                }                                                                       \
+                if (cmd & TypeNum) {                                                    \
+                    argument  += *((Elem_t *) (cpu -> code + cpu -> ip));               \
+                    cpu -> ip += sizeof(Elem_t);                                        \
+                }                                                                       \
+                __VA_ARGS__                                                             \
+             } else if (cpu -> stack.size < -arg)                                       \
+                    fprintf(stderr, "Not enough Elements to Out :_(\n");                \
+                else {                                                                  \
+                    __VA_ARGS__                                                         \
+                    cpu -> ip += sizeof(char);                                          \
+                }                                                                       \
              break;
 
 #define DEF_CMD_JUMP(name, num, oper)                                                   \
@@ -229,7 +234,14 @@ int doBinCommands(CPU *cpu, FILE *stream) {
                 cpu -> ip = *((int *) ((char *) cpu -> code + cpu -> ip));              \
             break;                                                                      \
 
+#define DEF_CMD_REC(name, num,...)                                                      \
+        case CMD_##name:                                                                \
+            __VA_ARGS__                                                                 \
+            break;                                                                      \
+
 #include "cmd.h"
+
+#undef DEF_CMD_REC
 
 #undef DEF_CMD_JUMP
 

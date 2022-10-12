@@ -15,9 +15,9 @@
 #endif
 
 enum ArgType {
-    TypeNum = (1 << 4),
-    TypeReg = (1 << 5),
-    TypeRAM = (1 << 6)
+    TypeNum = (1 << 5),
+    TypeReg = (1 << 6),
+    TypeRAM = (1 << 7)
 };
 
 enum AsmErrors {
@@ -30,6 +30,9 @@ enum AsmErrors {
 #define DEF_CMD_JUMP(name, num, ...) \
     CMD_##name = (num),
 
+#define DEF_CMD_REC(name, num, ...) \
+    CMD_##name = (num),
+
 enum StackCommands {
     #include "cmd.h"
 };
@@ -37,6 +40,8 @@ enum StackCommands {
 #undef DEF_CMD
 
 #undef DEF_CMD_JUMP
+
+#undef DEF_CMD_REC
 
 #ifdef ASMBLER_CP
 int stackAsmTex(Lines *commandList, FILE *outStream);

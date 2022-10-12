@@ -3,14 +3,13 @@ DEF_CMD(HALT, 0, 0, {
 })
 
 DEF_CMD(PUSH, 1, 1, {
-    if (cmd & TypeRAM)
-        argument = cpu -> RAM[argument];
-
+if (cmd & TypeRAM)
+    argument = cpu -> RAM[argument];
     err |= stackPush(&(cpu -> stack), argument);
 })
 
 DEF_CMD(POP , 2, 1, {
-    //TODO: OutOfArrayErr
+//TODO: OutOfArrayErr
 
     if (cmd & TypeRAM)
         cpu -> RAM[argument]  = stackPop(&(cpu -> stack), &err);
@@ -54,3 +53,14 @@ DEF_CMD_JUMP(JBE, 12, <=)
 DEF_CMD_JUMP(JL , 13, ==)
 
 DEF_CMD_JUMP(JM , 14, !=)
+
+DEF_CMD_REC(CALL, 15, {
+    cpu -> ip += sizeof(char);
+    err |= stackPush(&(cpu -> calls), cpu -> ip + sizeof(int));
+    cpu -> ip = *((int *) ((char *) cpu -> code + cpu -> ip));
+})
+
+DEF_CMD_REC(RET , 16, {
+    argument = stackPop(&(cpu -> calls), &err);
+    cpu -> ip = argument;
+})

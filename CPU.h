@@ -22,7 +22,7 @@ struct BinFile {
 };
 
 const int  RAM_SIZE = 10000;
-const int REGS_SIZE = 5;
+const int REGS_SIZE =   5  ;
 
 struct CPU {
     Elem_t  *Regs   =  nullptr ;
@@ -33,6 +33,8 @@ struct CPU {
     bool    status  = Destructed;
 
     Stack stack = {};
+
+    Stack calls = {};
 };
 
 int BinFileCtor(BinFile *binFile, FILE *stream);
