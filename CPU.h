@@ -1,7 +1,5 @@
-#include "functionList.h"
-#include "asm.h"
 #include "stack.h"
-
+#include "asm.h"
 
 enum BinFileErrors {
      BinSignatureErr  = 1,

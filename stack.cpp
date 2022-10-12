@@ -16,7 +16,7 @@ int stackConstructor(Stack *stack, const char* variableName, const char* declara
     stack -> data = (Elem_t *) recalloc(stack -> data, stack -> size, stack -> capacity, sizeof(Elem_t));
 #if ((PROTECTION & STACK_CANARY_PROTECTION))
     *((uint64_t *) ((char *) stack -> data - sizeof(uint64_t))) = stack -> LftVictimToGods;
-        *((uint64_t *) ((char *) stack -> data + sizeof( Elem_t ))) = stack -> RgtVictimToGods;
+    *((uint64_t *) ((char *) stack -> data + sizeof( Elem_t ))) = stack -> RgtVictimToGods;
 #endif
 
 #if (PROTECTION & STACK_LOG_INFO)
@@ -31,7 +31,7 @@ int stackConstructor(Stack *stack, const char* variableName, const char* declara
 
 #if (STACK_HASH_PROTECTION & PROTECTION)
     stack -> dataGnuHash   = getGnuHash(stack -> data, sizeof(Elem_t) * stack -> capacity);
-        stack -> structGnuHash = getGnuHash(stack, sizeof(Stack) - sizeof(uint64_t));
+    stack -> structGnuHash = getGnuHash(stack, sizeof(Stack) - sizeof(uint64_t));
 #endif
 
     return StackOk;

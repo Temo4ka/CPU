@@ -131,27 +131,27 @@ int doTexCommands(Lines *commandList, FILE *stream) {
     for (size_t currentCommand = 3; currentCommand < numOfCommands; ++currentCommand) {
         sscanf(commandList -> array[currentCommand].line, "%d", &cmd);
         switch(cmd) {
-            case PUSH:
+            case CMD_PUSH:
                 ++currentCommand;
                 sscanf(commandList -> array[currentCommand].line, "%d", &value);
                 err |=stackPush(&stack, value);
                 break;
-            case POP:
+            case CMD_POP:
                 stackPop(&stack, &err);
                 break;
-            case ADD:
+            case CMD_ADD:
                 if (stack.size < 2)
                     fprintf(stderr, "Not enough Elements to add :_(\n");
                 else
                     err |=stackPush(&stack, stackPop(&stack, &err) + stackPop(&stack, &err));
                 break;
-            case DIV:
+            case CMD_DIV:
                 if (stack.size < 2)
                     fprintf(stderr, "Not enough Elements to div :_(\n");
                 else
                     err |= stackPush(&stack, stackPop(&stack, &err) / stackPop(&stack, &err));
                 break;
-            case OUT:
+            case CMD_OUT:
                 if (stack.size < 1)
                     fprintf(stderr, "Not enough Elements to Out :_(\n");
                 else {
@@ -160,7 +160,7 @@ int doTexCommands(Lines *commandList, FILE *stream) {
                     err |= stackPush(&stack, value);
                 }
                 break;
-            case PRODUCT:
+            case CMD_MULT:
                 if (stack.size < 2)
                     fprintf(stderr, "Not enough Elements to div :_(\n");
                 else
@@ -196,93 +196,44 @@ int doBinCommands(CPU *cpu, FILE *stream) {
 #endif
 
         switch((cpu -> code[cpu -> ip] & CMD_MASK)) {
-            case PUSH:
-                    cmd  = cpu -> code[cpu -> ip];
-                argument = 0;
 
-                cpu -> ip += sizeof(char);
+#define DEF_CMD(name, num, arg, ...)                                        \
+        case CMD_##name:                                                    \
+             if (arg > 0) {                                                 \
+                cmd  = cpu -> code[cpu -> ip];                              \
+                argument = 0;                                               \
+                                                                            \
+                cpu -> ip += sizeof(char);                                  \
+                                                                            \
+                if (cmd & TypeReg) {                                        \
+                    argument  += cpu -> code[cpu -> ip];                    \
+                    cpu -> ip += sizeof(char);                              \
+                }                                                           \
+                if (cmd & TypeNum) {                                        \
+                    argument  += *((Elem_t *) (cpu -> code + cpu -> ip));   \
+                    cpu -> ip += sizeof(Elem_t);                            \
+                }                                                           \
+                __VA_ARGS__                                                 \
+             } else if (cpu -> stack.size < -arg)                           \
+                    fprintf(stderr, "Not enough Elements to Out :_(\n");    \
+                else {                                                      \
+                    __VA_ARGS__                                             \
+                    cpu -> ip += sizeof(char);                              \
+                }                                                           \
+             break;
 
-                if (cmd & TypeReg) {
-                    argument  += cpu -> code[cpu -> ip];
-                    cpu -> ip += sizeof(char);
-                }
-                if (cmd & TypeNum) {
-                    argument  += *((Elem_t *) (cpu -> code + cpu -> ip));
-                    cpu -> ip += sizeof(Elem_t);
-                }
-                if (cmd & TypeRAM)
-                    argument = cpu -> RAM[argument];
+#define DEF_CMD_JUMP(name, num, oper)                                                   \
+        case CMD_##name:                                                                \
+            cpu -> ip += sizeof(char);                                                  \
+            if (stackPop(&(cpu -> stack), &err) oper stackPop(&(cpu -> stack), &err))   \
+                cpu -> ip = *((int *) ((char *) cpu -> code + cpu -> ip));              \
+            break;                                                                      \
 
-                err |= stackPush(&(cpu -> stack), argument);
-                break;
+#include "cmd.h"
 
-            case POP:
-                cmd  = cpu -> code[cpu -> ip];
-                argument = 0;
+#undef DEF_CMD_JUMP
 
-                cpu -> ip += sizeof(char);
-
-                if (cmd & TypeReg) {
-                    argument  += cpu -> code[cpu -> ip];
-                    cpu -> ip += sizeof(char);
-                }
-                if (cmd & TypeNum) {
-                    argument  += *((Elem_t *) (cpu -> code + cpu -> ip));
-                    cpu -> ip += sizeof(Elem_t);
-                }
-
-                //TODO: OutOfArrayErr
-
-                if (cmd & TypeRAM)
-                    cpu -> RAM[argument]  = stackPop(&(cpu -> stack), &err);
-                else if (cmd & TypeRAM)
-                    cpu -> Regs[argument] = stackPop(&(cpu -> stack), &err);
-                else
-                    stackPop(&(cpu -> stack), &err);
-                break;
-
-            case ADD:
-                if (cpu -> stack.size < 2)
-                    fprintf(stderr, "Not enough Elements to add :_(\n");
-                else {
-                    err |=stackPush(&(cpu -> stack), stackPop(&(cpu -> stack), &err) + stackPop(&(cpu -> stack), &err));
-                    cpu -> ip += sizeof(char);
-                }
-                break;
-
-            case DIV:
-                if (cpu -> stack.size < 2)
-                    fprintf(stderr, "Not enough Elements to div :_(\n");
-                else {
-                    err |= stackPush(&(cpu -> stack), stackPop(&(cpu -> stack), &err) / stackPop(&(cpu -> stack), &err));
-                    cpu -> ip += sizeof(char);
-                }
-                break;
-
-            case OUT:
-                if (cpu -> stack.size < 1)
-                    fprintf(stderr, "Not enough Elements to Out :_(\n");
-                else {
-                    Elem_t value = stackPop(&(cpu -> stack), &err);
-                    fprintf(stream, "%d\n", value);
-                    err |= stackPush(&(cpu -> stack), value);
-
-                    cpu -> ip += sizeof(char);
-                }
-                break;
-
-            case PRODUCT:
-                if (cpu -> stack.size < 2)
-                    fprintf(stderr, "Not enough Elements to div :_(\n");
-                else {
-                    err |= stackPush(&(cpu -> stack), stackPop(&(cpu -> stack), &err) * stackPop(&(cpu -> stack), &err));
-                    cpu -> ip += sizeof(char);
-                }
-                break;
-
-            case JUMP:
-                cpu -> ip = *((int *) ((char *) cpu -> code + cpu -> ip));
-                break;
+#undef DEF_CMD
 
             default:
                 cpu -> ip = cpu -> codeSize;
