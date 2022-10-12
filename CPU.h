@@ -50,3 +50,5 @@ int doBinCommands(CPU *cpu, FILE *stream);
 int doTexCommands(Lines *commandList, FILE *stream);
 
 void cpuCodeDump(CPU *cpu, const unsigned line, const char *functionName, const char *fileName, FILE *stream);
+
+void cpuRegsDump(CPU *cpu, const unsigned line, const char *functionName, const char *fileName, FILE *stream);

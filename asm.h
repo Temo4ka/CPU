@@ -1,6 +1,7 @@
 #ifndef functionList
 #include "functionList.h"
 #endif
+#include <cmath>
 #ifdef ASMBLER_CP
 #include "labels.h"
 #endif
@@ -23,6 +24,8 @@ enum ArgType {
 enum AsmErrors {
     UndefinedCmd = 1,
 };
+
+const int PRECISION = 100;
 
 #define DEF_CMD(name, num, ...)      \
     CMD_##name = (num),

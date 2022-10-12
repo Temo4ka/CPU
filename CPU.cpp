@@ -6,11 +6,20 @@ const int    CMD_MASK   =       31       ;
 const int DUMP_ELEMENTS =       25       ;
 const char *SIGNATURE   =      "CP"      ;
 
-//#define DUMP_ON
+//#define CODE_DUMP_ON
+
+//#define REGS_DUMP_ON
+
+//#define STACK_DUMP_ON
+
 //#define DUMP_PAUSE
 
 #define codeDump(cpu) { \
     cpuCodeDump((cpu), __LINE__, __PRETTY_FUNCTION__, FILENAME_, stderr);      \
+}
+
+#define regsDump(cpu) { \
+    cpuRegsDump((cpu), __LINE__, __PRETTY_FUNCTION__, FILENAME_, stderr);      \
 }
 
 void myDebugElemPrint(FILE *stream, const Elem_t element);
@@ -193,11 +202,23 @@ int doBinCommands(CPU *cpu, FILE *stream) {
     int err = 0;
 
     while (cpu -> ip < cpu -> codeSize) {
-        unsigned char cmd    = ((unsigned char) cpu -> code[cpu -> ip] & CMD_MASK);
-        Elem_t      argument =                  0                    ;
+        unsigned char  cmd   = ((unsigned char) cpu -> code[cpu -> ip] & CMD_MASK);
+        Elem_t      argument =                         0                          ;
 
-#ifdef DUMP_ON
+#ifdef CODE_DUMP_ON
         codeDump(cpu);
+#endif
+
+#ifdef REGS_DUMP_ON
+        regsDump(cpu);
+#endif
+
+#ifdef STACK_DUMP_ON
+        stackDump(&cpu -> stack);
+#endif
+
+#ifdef DUMP_PAUSE
+        getchar();
 #endif
 
         switch(cmd & CMD_MASK) {
@@ -232,6 +253,8 @@ int doBinCommands(CPU *cpu, FILE *stream) {
             cpu -> ip += sizeof(char);                                                  \
             if (stackPop(&(cpu -> stack), &err) oper stackPop(&(cpu -> stack), &err))   \
                 cpu -> ip = *((int *) ((char *) cpu -> code + cpu -> ip));              \
+            else                                                                        \
+                cpu -> ip += sizeof(int);                                               \
             break;                                                                      \
 
 #define DEF_CMD_REC(name, num,...)                                                      \
@@ -251,6 +274,7 @@ int doBinCommands(CPU *cpu, FILE *stream) {
                 cpu -> ip = cpu -> codeSize;
                 break;
         }
+
         if (err)
             return err;
     }
@@ -290,6 +314,24 @@ void cpuCodeDump(CPU *cpu, const unsigned line, const char *functionName, const 
             fprintf(stream, " ip\n");
         else
             break;
+    }
+    fprintf(stream, "\n");
+
+#ifdef DUMP_PAUSE
+    if (stream == stderr)
+        getchar();
+#endif
+}
+
+void cpuRegsDump(CPU *cpu, const unsigned line, const char *functionName, const char *fileName, FILE *stream) {
+    fprintf(stream, "-------------------------------RegsDump-------------------------------\n");
+    fprintf(stream, "CPU_Regs:%08X dumped at %s at %s(%d)\n", cpu -> Regs, functionName, fileName, line);
+    for (size_t current = 0; current < REGS_SIZE; ++current) {
+        fprintf(stream, "%03zu ", current);
+    }
+    fprintf(stream, "\n");
+    for (size_t current = 0; current < REGS_SIZE; ++current) {
+        fprintf(stream, "%03d ", cpu -> Regs[current]);
     }
     fprintf(stream, "\n");
 
