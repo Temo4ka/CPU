@@ -7,11 +7,11 @@
 #endif
 
 #ifndef catchNullptr
-#define catchNullptr(a) { \
-    if ((a) == nullptr) {         \
+#define catchNullptr(a) {                                                                                                                   \
+    if ((a) == nullptr) {                                                                                                                    \
         fprintf(stderr, "Nullptr caught.\nVariable: %s,\nFile: %s,\nLine: %d,\nFunction: %s\n", #a, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
-    return NULLCAUGTH;         \
-    }\
+    return NULLCAUGTH;                                                                                                                         \
+    }                                                                                                                                           \
 }
 #endif
 
@@ -33,18 +33,18 @@ const int PRECISION = 100;
 #define DEF_CMD_JUMP(name, num, ...) \
     CMD_##name = (num),
 
-#define DEF_CMD_REC(name, num, ...) \
-    CMD_##name = (num),
-
 enum StackCommands {
     #include "cmd.h"
 };
 
+struct Header {
+    size_t signature = -1;
+    size_t  version  = -1;
+    size_t dataSize  = -1;
+};
+
 #undef DEF_CMD
-
 #undef DEF_CMD_JUMP
-
-#undef DEF_CMD_REC
 
 #ifdef ASMBLER_CP
 int stackAsmTex(Lines *commandList, FILE *outStream);

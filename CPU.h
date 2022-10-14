@@ -9,20 +9,21 @@ enum BinFileErrors {
 };
 
 enum CPU_Errors {
-        CPU_Destructed     = 1,
+    CPU_DoubleDestruction  = 1,
     CPU_DoubleConstruction = 2,
 };
 
 struct BinFile {
     FILE   *file      =  nullptr  ;
     size_t fileSize   =     0     ;
+    size_t asmVersion =     0     ;
+    size_t signature  =     0     ;
     int    status     =     0     ;
-    int   signature   =     0     ;
-    int  asmVersion   =     0     ;
 };
 
-const int  RAM_SIZE = 10000;
-const int REGS_SIZE =   5  ;
+const int   RAM_SIZE  =  100 ;
+const int  REGS_SIZE  =   5  ;
+const int SIZE_POISON =  -1  ;
 
 struct CPU {
     Elem_t  *Regs   =  nullptr ;
@@ -37,15 +38,15 @@ struct CPU {
     Stack calls = {};
 };
 
-int BinFileCtor(BinFile *binFile, FILE *stream);
+int binFileCtor(BinFile *binFile, FILE *stream);
 
-int BinFileDtor(BinFile *commands);
+int binFileDtor(BinFile *commands);
 
 int cpuCtor(CPU *cpu, BinFile *binFile);
 
 int cpuDtor(CPU *cpu);
 
-int doBinCommands(CPU *cpu, FILE *stream);
+int executeBinary(CPU *cpu, FILE *stream);
 
 int doTexCommands(Lines *commandList, FILE *stream);
 
