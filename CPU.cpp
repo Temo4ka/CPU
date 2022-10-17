@@ -5,9 +5,9 @@ const int  ASM_VERSION  =         3       ;
 const int    CMD_MASK   =   (1 << 5) - 1  ;
 const int DUMP_ELEMENTS =        25       ;
 
-const char   SETRED[]       =  "\033[0;31m";
-const char   SETNONE[]      =  "\033[0;0m";
-const char   SETGREEN[]     =  "\033[0;32m";
+const char SETRED[]   =  "\033[0;31m";
+const char SETNONE[]  =  "\033[0;0m" ;
+const char SETGREEN[] =  "\033[0;32m";
 
 //const char *SIGNATURE   =       "CP"      ;
 
@@ -155,9 +155,9 @@ int executeBinary(CPU *cpu, FILE *stream) {
         stackDump(&cpu -> stack);
 #endif
 
-#ifdef SHOW_RAM_IMAGE
-        showRamImage(cpu);
-#endif
+//#ifdef SHOW_RAM_IMAGE
+//        showRamImage(cpu);
+//#endif
 
 #ifdef DUMP_PAUSE
         getchar();
@@ -227,6 +227,9 @@ int executeBinary(CPU *cpu, FILE *stream) {
             return err;
     }
 
+#ifdef SHOW_RAM_IMAGE
+    showRamImage(cpu);
+#endif
 
     return OK;
 }

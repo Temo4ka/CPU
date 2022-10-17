@@ -5,38 +5,32 @@
 
 #define BINARY_LIST
 
-const char *INPUT_FILE_NAME     =  "commandnumb.txt";
-const char *INPUT_BIN_FILE_NAME =  "bincommand.bin" ;
-const char *OUTPUT_FILE_NAME    = "resultOfCalc.txt";
+#include "defaultFilenames.h"
 
 int main(int argc, char *argv[]) {
     system(("chcp " + std::to_string(CP_UTF8)).c_str());
-    char *fileTexIn = nullptr;
-    char *fileBinIn = nullptr;
-    char * fileOut  = nullptr;
+
+    char *fileTexIn = (char *)   INPUT_FILE_NAME  ;
+    char *fileBinIn = (char *) INPUT_BIN_FILE_NAME;
+    char * fileOut  = (char *)   OUTPUT_FILE_NAME ;
 
     int err = 0;
 
     switch (argc) {
-        case 4: fileTexIn = argv[3];
-                fileBinIn = argv[2];
-                fileOut   = argv[1];
-                break;
+        case 4:
+            fileBinIn = argv[1];
+            fileOut   = argv[2];
+            fileTexIn = argv[3];
+            break;
 
-        case 3: fileTexIn =         argv[2]          ;
-                fileBinIn =         argv[1]          ;
-                fileOut   = (char *) OUTPUT_FILE_NAME;
-                break;
+        case 3:
+            fileBinIn = argv[1];
+            fileTexIn = argv[2];
+            break;
 
-        case 2: fileTexIn =           argv[1]           ;
-                fileBinIn = (char *) INPUT_BIN_FILE_NAME;
-                fileOut   = (char *) OUTPUT_FILE_NAME   ;
-                break;
-
-        default: fileTexIn = (char *)   INPUT_FILE_NAME  ;
-                 fileBinIn = (char *) INPUT_BIN_FILE_NAME;
-                 fileOut   = (char *)   OUTPUT_FILE_NAME ;
-                 break;
+        case 2:
+            fileBinIn = argv[1];
+            break;
     }
 
     FILE *outputStream = fopen(fileOut, "w");
@@ -84,7 +78,6 @@ int main(int argc, char *argv[]) {
 #endif
 
     fclose(outputStream);
-
     stackLogClose();
     logClose();
 

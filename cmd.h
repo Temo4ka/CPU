@@ -15,11 +15,13 @@ DEF_CMD(PUSH, 1, 1, {
 DEF_CMD(POP , 2, 1, {
 //TODO: OutOfArrayErr
 
-    if ((cmd) & TypeRAM)
-        cpu -> RAM[argument]  = stackPop(&(cpu -> stack), &err);
-    else if ((cmd) & TypeReg)
+    if ((cmd) & TypeRAM) {
+        if (argument >= RAM_SIZE) return CPU_OUT_OF_RAM;
+        cpu -> RAM[argument] = stackPop(&(cpu -> stack), &err);
+    } else if ((cmd) & TypeReg) {
+        if (argument >= REGS_SIZE) return CPU_OUT_OF_REGS;
         cpu -> Regs[argument] = stackPop(&(cpu -> stack), &err);
-    else
+    }else
         stackPop(&(cpu -> stack), &err);
 })
 

@@ -11,6 +11,8 @@ enum BinFileErrors {
 enum CPU_Errors {
     CPU_DoubleDestruction  = 1,
     CPU_DoubleConstruction = 2,
+        CPU_OUT_OF_REGS    = 3,
+        CPU_OUT_OF_RAM     = 4
 };
 
 struct BinFile {
@@ -21,7 +23,7 @@ struct BinFile {
     int    status     =     0     ;
 };
 
-const int   RAM_SIZE  =  100 ;
+const int   RAM_SIZE  =  400 ;
 const int  REGS_SIZE  =   5  ;
 const int SIZE_POISON =  -1  ;
 
