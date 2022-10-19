@@ -94,10 +94,10 @@ int cpuDtor(CPU *cpu) {
     int err = 0;
 
     free(cpu -> code);
-    cpu->code = nullptr;
+    cpu -> code = nullptr;
 
     free(cpu -> RAM);
-    cpu -> RAM = nullptr;
+    cpu -> RAM  = nullptr;
 
     free(cpu -> Regs);
     cpu -> Regs = nullptr;
@@ -129,6 +129,8 @@ int binFileDtor(BinFile *commands) {
 
     return OK;
 }
+
+int argDefinition(CPU *cpu, int cmd,  int *argument);
 
 int executeBinary(CPU *cpu, FILE *stream) {
     catchNullptr(cpu);
@@ -168,46 +170,30 @@ int executeBinary(CPU *cpu, FILE *stream) {
 #define DEF_CMD(name, num, arg, ...)                                                    \
         case CMD_##name:                                                                \
              if (arg > 0) {                                                             \
-                cmd  = (unsigned char) cpu -> code[cpu -> ip];                          \
-                argument = 0;                                                           \
+                   cmd   = (unsigned char) CODE[IP];                      \
+                argument =                  0                    ;                      \
                                                                                         \
-                cpu -> ip += sizeof(char);                                              \
+                IP += sizeof(char);                                              \
+                err = argDefinition(cpu, cmd, &argument);                               \
+                if (err) return err;                                                    \
                                                                                         \
-                if (cmd & TypeReg) {                                                    \
-                    argument  += cpu -> code[cpu -> ip];                                \
-                    cpu -> ip += sizeof(char);                                          \
-                }                                                                       \
-                if (cmd & TypeNum) {                                                    \
-                    argument  += *((Elem_t *) (cpu -> code + cpu -> ip));               \
-                    cpu -> ip += sizeof(Elem_t);                                        \
-                }                                                                       \
                 __VA_ARGS__                                                             \
              } else if (cpu -> stack.size < -arg)                                       \
-                    fprintf(stderr, "Not enough Elements to Out :_(\n");                \
+                    fprintf(stderr, "Not enough Elements :_(\n");                       \
                 else {                                                                  \
                     __VA_ARGS__                                                         \
-                    cpu -> ip += sizeof(char);                                          \
+                    IP += sizeof(char);                                          \
                 }                                                                       \
              break;
 
-#define DEF_CMD_JUMP(name, num, oper)                                                       \
-        case CMD_##name:                                                                    \
-            if (strcmpi(#name, "call")) {                                                   \
-                cpu -> ip += sizeof(char);                                                  \
-                if (stackPop(&(cpu -> stack), &err) oper stackPop(&(cpu -> stack), &err))   \
-                    cpu -> ip = *((int *) ((char *) cpu -> code + cpu -> ip));              \
-                else                                                                        \
-                    cpu -> ip += sizeof(int);                                               \
-            } else {                                                                        \
-                cpu -> ip += sizeof(char);                                                  \
-                err |= stackPush(&(cpu -> calls), cpu -> ip + sizeof(int));                 \
-                cpu -> ip = *((int *) ((char *) cpu -> code + cpu -> ip));                  \
-            }                                                                               \
-            break;                                                                          \
-
-#define DEF_CMD_REC(name, num,...)                                                      \
+#define DEF_CMD_JUMP(name, num, oper, ...)                                              \
         case CMD_##name:                                                                \
             __VA_ARGS__                                                                 \
+            IP += sizeof(char);                                                  \
+            if (_POP(&(STACK), &err) oper _POP(&(STACK), &err))   \
+                IP = *((int *) ((char *) CODE + IP));              \
+            else                                                                        \
+                IP += sizeof(int);                                               \
             break;                                                                      \
 
 #include "cmd.h"
@@ -223,13 +209,28 @@ int executeBinary(CPU *cpu, FILE *stream) {
                 break;
         }
 
-        if (err)
-            return err;
+        if (err) return err;
     }
 
 #ifdef SHOW_RAM_IMAGE
     showRamImage(cpu);
 #endif
+
+    return OK;
+}
+
+int argDefinition(CPU *cpu, int cmd, int *argument) {
+    catchNullptr(argument);
+    catchNullptr(  cpu   );
+
+    if (cmd & TypeReg) {
+        *argument += cpu -> code[cpu -> ip];
+        cpu -> ip +=      sizeof(char)     ;
+    }
+    if (cmd & TypeNum) {
+        *argument += *((Elem_t *) (cpu -> code + cpu -> ip));
+        cpu -> ip +=           sizeof(Elem_t)               ;
+    }
 
     return OK;
 }

@@ -10,9 +10,9 @@
 int main(int argc, char *argv[]) {
     system(("chcp " + std::to_string(CP_UTF8)).c_str());
 
-    char *fileTexIn = (char *)   INPUT_FILE_NAME  ;
-    char *fileBinIn = (char *) INPUT_BIN_FILE_NAME;
-    char * fileOut  = (char *)   OUTPUT_FILE_NAME ;
+    const char *fileTexIn =   INPUT_FILE_NAME  ;
+    const char *fileBinIn = INPUT_BIN_FILE_NAME;
+    const char * fileOut  =   OUTPUT_FILE_NAME ;
 
     int err = 0;
 
