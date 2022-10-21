@@ -24,7 +24,7 @@ struct BinFile {
 };
 
 const int   RAM_SIZE  =  400 ;
-const int  REGS_SIZE  =   5  ;
+const int  REGS_SIZE  =   9  ;
 const int SIZE_POISON =  -1  ;
 
 struct CPU {

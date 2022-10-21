@@ -8,7 +8,7 @@
 #include "defaultFilenames.h"
 
 int main(int argc, char *argv[]) {
-    system(("chcp " + std::to_string(CP_UTF8)).c_str());
+    system(("chcp " + std :: to_string(CP_UTF8)).c_str());
 
     const char *fileTexIn =   INPUT_FILE_NAME  ;
     const char *fileBinIn = INPUT_BIN_FILE_NAME;

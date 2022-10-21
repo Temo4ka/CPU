@@ -1,4 +1,5 @@
 #include "CPU.h"
+#include <math.h>
 
 const int BIN_SIGNATURE = ('C' << 8) + 'P';
 const int  ASM_VERSION  =         3       ;
@@ -35,8 +36,7 @@ int showRamImage(CPU *cpu);
 
 int binFileCtor(BinFile *binFile, FILE *stream) {
     catchNullptr(binFile);
-    if (binFile -> status == Constructed)
-        return BinDestructedFile;
+    if (binFile -> status == Constructed) return BinDestructedFile;
 
     Header *buffer = (Header *) calloc(1, sizeof(Header));
     catchNullptr(buffer);
@@ -49,12 +49,10 @@ int binFileCtor(BinFile *binFile, FILE *stream) {
     binFile ->  fileSize  = buffer -> dataSize - sizeof(Header);
     binFile ->    file    =  stream;
 
-    if (binFile -> signature != BIN_SIGNATURE)
-        return BinSignatureErr;
-    if (binFile -> asmVersion != ASM_VERSION)
-        return BinAsmVersionErr;
+    if (binFile -> signature  != BIN_SIGNATURE) return BinSignatureErr ;
+    if (binFile -> asmVersion !=  ASM_VERSION ) return BinAsmVersionErr;
 
-    binFile ->   status   = Constructed;
+    binFile -> status = Constructed;
 
     return OK;
 }
@@ -133,11 +131,11 @@ int binFileDtor(BinFile *commands) {
 int argDefinition(CPU *cpu, int cmd,  int *argument);
 
 int executeBinary(CPU *cpu, FILE *stream) {
-    catchNullptr(cpu);
     catchNullptr(cpu -> code);
-    catchNullptr(stream);
-    if (cpu -> status == Destructed)
-        return CPU_DoubleDestruction;
+    catchNullptr(   stream  );
+    catchNullptr(    cpu    );
+
+    if (cpu -> status == Destructed) return CPU_DoubleDestruction;
 
     int err = 0;
 
@@ -170,10 +168,10 @@ int executeBinary(CPU *cpu, FILE *stream) {
 #define DEF_CMD(name, num, arg, ...)                                                    \
         case CMD_##name:                                                                \
              if (arg > 0) {                                                             \
-                   cmd   = (unsigned char) CODE[IP];                      \
-                argument =                  0                    ;                      \
+                   cmd   = (unsigned char) CODE[IP];                                    \
+                argument =           0             ;                                    \
                                                                                         \
-                IP += sizeof(char);                                              \
+                IP += sizeof(char);                                                     \
                 err = argDefinition(cpu, cmd, &argument);                               \
                 if (err) return err;                                                    \
                                                                                         \
@@ -182,26 +180,23 @@ int executeBinary(CPU *cpu, FILE *stream) {
                     fprintf(stderr, "Not enough Elements :_(\n");                       \
                 else {                                                                  \
                     __VA_ARGS__                                                         \
-                    IP += sizeof(char);                                          \
+                    IP += sizeof(char);                                                 \
                 }                                                                       \
              break;
 
 #define DEF_CMD_JUMP(name, num, oper, ...)                                              \
         case CMD_##name:                                                                \
             __VA_ARGS__                                                                 \
-            IP += sizeof(char);                                                  \
-            if (_POP(&(STACK), &err) oper _POP(&(STACK), &err))   \
-                IP = *((int *) ((char *) CODE + IP));              \
+            IP += sizeof(char);                                                         \
+            if (_POP oper _POP)                         \
+                IP = *((int *) ((char *) CODE + IP));                                   \
             else                                                                        \
-                IP += sizeof(int);                                               \
+                IP += sizeof(int);                                                      \
             break;                                                                      \
 
 #include "cmd.h"
 
-#undef DEF_CMD_REC
-
 #undef DEF_CMD_JUMP
-
 #undef DEF_CMD
 
             default:
